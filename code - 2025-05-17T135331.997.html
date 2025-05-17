@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Daily Plan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@700&family=Roboto&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Gochi+Hand&display=swap');
+    
+    body {
+      font-family: 'Patrick Hand', cursive;
+      background-color: #f9f7f0; /* Default light beige background */
+    }
+    .handwritten {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.2rem;
+    }
+    .handwritten-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 2.5rem;
+    }
+    .task-row {
+      min-height: 60px; /* Adjusted min-height */
+      transition: all 0.3s ease;
+    }
+    .task-row:hover {
+      background-color: rgba(245, 245, 245, 0.7);
+    }
+    .btn {
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .priority-high {
+      background-color: #ffebee !important; /* Ensure override */
+      color: #c62828 !important;
+      font-weight: bold;
+    }
+    .priority-medium {
+      background-color: #fff8e1 !important;
+      color: #f57f17 !important;
+      font-weight: bold;
+    }
+    .priority-low {
+      background-color: #e8f5e9 !important;
+      color: #2e7d32 !important;
+      font-weight: bold;
+    }
+    .task-number-display { /* For non-edit mode */
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-color, #4a148c);
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 24px;
+      margin-right: 8px;
+      font-weight: bold;
+    }
+    .task-number-edit { /* Clickable number in edit mode */
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-color: #4a148c;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 24px;
+      margin-right: 8px;
+      font-weight: bold;
+      cursor: default; /* Not clickable itself, but cell can be */
+    }
+    .task-number-edit:hover {
+      background-color: #7b1fa2;
+      transform: scale(1.1);
+    }
+
+    .task-completed td.task-content,
+    .task-completed td.time-content,
+    .task-completed td.comment-content {
+      text-decoration: line-through;
+      color: #a0aec0; /* Tailwind gray-500 */
+    }
+    .task-completed td.priority-content {
+        text-decoration: line-through;
+    }
+
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: white !important;
+        font-size: 10pt; /* Adjust print font size */
+      }
+      .handwritten {
+        font-size: 1rem; /* Adjust for print */
+      }
+      .handwritten-title {
+        font-size: 2rem; /* Adjust for print */
+      }
+      .print-shadow {
+        box-shadow: none !important;
+      }
+      .print-border {
+        border: 2px solid #000 !important;
+      }
+      table th, table td {
+        padding: 4px 6px; /* Reduce padding for print */
+      }
+      .task-row {
+        min-height: auto;
+      }
+      .notes-area {
+        min-height: 80px;
+      }
+    }
+    .modal-overlay {
+      background-color: rgba(0,0,0,0.7);
+    }
+    .modal-content {
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .task-input-field { /* Renamed from task-input to avoid conflict */
+      border-bottom: 2px dashed #9e9e9e;
+      transition: all 0.3s ease;
+      background-color: transparent;
+    }
+    .task-input-field:focus {
+      border-bottom: 2px solid var(--primary-color, #4a148c);
+      outline: none;
+    }
+    .notes-area {
+      background-image: linear-gradient(to bottom, transparent 95%, #bdbdbd 95%);
+      background-size: 100% 28px; /* Line height */
+      line-height: 28px;
+      padding-left: 10px;
+      padding-right: 10px;
+      background-color: #f9f7f0; /* Match body bg if needed or make transparent */
+    }
+    .notes-line {
+      display: block;
+      min-height: 28px; /* Match line height */
+    }
+    .theme-blue {
+      --primary-color: #3b82f6;
+      --secondary-color: #bfdbfe;
+      --text-color: #1e3a8a;
+    }
+    .theme-green {
+      --primary-color: #10b981;
+      --secondary-color: #d1fae5;
+      --text-color: #064e3b;
+    }
+    .theme-purple {
+      --primary-color: #8b5cf6;
+      --secondary-color: #ddd6fe;
+      --text-color: #5b21b6;
+    }
+    .theme-pink {
+      --primary-color: #ec4899;
+      --secondary-color: #fbcfe8;
+      --text-color: #831843;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="flex justify-center items-start md:items-center min-h-screen p-2 md:p-4 handwritten theme-purple" style="--primary-color: #8b5cf6; --secondary-color: #ddd6fe; --text-color: #5b21b6;">
+  <div class="max-w-[800px] w-full border-2 border-black relative bg-white shadow-xl print-shadow print-border rounded-lg overflow-hidden" style="background-image: url('https://www.transparenttextures.com/patterns/notebook.png');">
+    <!-- Header with date navigation -->
+    <div class="flex flex-col sm:flex-row justify-between items-start px-4 sm:px-8 pt-6 sm:pt-8 pb-4 bg-[var(--secondary-color)] border-b-2 border-[var(--primary-color)]">
+      <div class="w-full sm:w-auto mb-4 sm:mb-0">
+        <h1 class="handwritten-title font-bold text-3xl sm:text-4xl text-[var(--text-color)] mb-2">
+          Daily Planner
+        </h1>
+        <div class="text-[14px] text-[var(--text-color)]">
+          <div class="flex items-center flex-wrap gap-2 mb-3">
+            <span id="current-date" class="font-semibold whitespace-nowrap">Date:...../..../....</span>
+            <button id="prev-day" class="no-print text-xs sm:text-sm px-2 py-1 sm:px-3 border border-[var(--primary-color)] rounded-full hover:bg-[var(--primary-color)] hover:text-white btn bg-white text-[var(--text-color)]">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button id="next-day" class="no-print text-xs sm:text-sm px-2 py-1 sm:px-3 border border-[var(--primary-color)] rounded-full hover:bg-[var(--primary-color)] hover:text-white btn bg-white text-[var(--text-color)]">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            <button id="print-btn" class="no-print text-xs sm:text-sm px-2 py-1 sm:px-3 rounded-full btn bg-[var(--primary-color)] text-white hover:opacity-90">
+              <i class="fas fa-print mr-1"></i>Print
+            </button>
+            <button id="theme-btn" class="no-print text-xs sm:text-sm px-2 py-1 sm:px-3 rounded-full btn bg-[var(--primary-color)] text-white hover:opacity-90">
+              <i class="fas fa-palette mr-1"></i>Theme
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-x-2 gap-y-1 text-[12px] font-normal">
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="6"/><span>Sa</span></label>
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="0"/><span>Su</span></label>
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="1"/><span>Mo</span></label>
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="2"/><span>Tu</span></label>
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="3"/><span>We</span></label>
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="4"/><span>Th</span></label>
+            <label class="flex items-center space-x-1"><input class="w-4 h-4 day-checkbox accent-[var(--primary-color)]" type="checkbox" data-day="5"/><span>Fr</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col items-start sm:items-end w-full sm:w-auto">
+        <div class="text-[14px] text-[var(--text-color)] font-semibold mb-2 sm:mb-0">
+          Page <span id="page-number">1</span>/365
+        </div>
+        <div class="mt-1 flex flex-wrap gap-2 no-print">
+          <button id="edit-btn" class="text-xs sm:text-sm px-3 py-1 sm:px-4 border border-[var(--primary-color)] rounded-full hover:bg-[var(--primary-color)] hover:text-white btn bg-white text-[var(--text-color)]">
+            <i class="fas fa-edit mr-1"></i>Edit
+          </button>
+          <button id="save-btn" class="text-xs sm:text-sm px-3 py-1 sm:px-4 rounded-full btn bg-[var(--primary-color)] text-white hover:opacity-90 hidden">
+            <i class="fas fa-save mr-1"></i>Save
+          </button>
+          <button id="add-row" class="text-xs sm:text-sm px-3 py-1 sm:px-4 rounded-full btn bg-green-600 text-white hover:bg-green-700 hidden">
+            <i class="fas fa-plus mr-1"></i>Add Row
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-[var(--primary-color)] text-white text-[14px] sm:text-[16px] font-semibold">
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-left w-[5%]">#</th>
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-left w-[7%]">Status</th>
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-left w-[28%]">Task</th>
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-left w-[15%]">Time</th>
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-left w-[15%]">Priority</th>
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-left w-[25%]">Comment</th>
+            <th class="border-2 border-[var(--text-color)] py-2 px-2 sm:py-3 sm:px-4 text-center w-[5%] no-print" id="actions-header">
+                <i class="fas fa-bolt"></i> <!-- Action icon -->
+            </th>
+          </tr>
+        </thead>
+        <tbody id="task-table-body">
+          <!-- Tasks will be added here dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notes Section -->
+    <div class="px-4 sm:px-8 py-4 sm:py-6 text-[14px] sm:text-[16px] font-semibold text-[var(--text-color)] border-t-2 border-[var(--primary-color)]">
+      <div class="flex items-center">
+        <i class="fas fa-pencil-alt mr-2 text-[var(--primary-color)]"></i>
+        <span>Notes For The Day / How To Improve</span>
+      </div>
+      <div id="notes-content-wrapper" class="font-normal mt-2 min-h-[112px] notes-area p-2 relative">
+        <!-- Content will be spans or textarea -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Selection Modal -->
+  <div id="theme-modal" class="fixed inset-0 flex items-center justify-center hidden z-50 modal-overlay p-4">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full modal-content shadow-2xl border-2 border-[var(--primary-color)]">
+      <h3 class="font-bold text-xl mb-4 text-center text-[var(--text-color)]">Select Theme</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <button class="theme-option px-4 py-3 rounded-lg border-2 border-blue-500 hover:border-blue-700 bg-blue-50 text-blue-800 font-medium" data-theme="blue"><i class="fas fa-palette mr-2"></i>Blue</button>
+        <button class="theme-option px-4 py-3 rounded-lg border-2 border-green-500 hover:border-green-700 bg-green-50 text-green-800 font-medium" data-theme="green"><i class="fas fa-leaf mr-2"></i>Green</button>
+        <button class="theme-option px-4 py-3 rounded-lg border-2 border-purple-500 hover:border-purple-700 bg-purple-50 text-purple-800 font-medium" data-theme="purple"><i class="fas fa-magic mr-2"></i>Purple</button>
+        <button class="theme-option px-4 py-3 rounded-lg border-2 border-pink-500 hover:border-pink-700 bg-pink-50 text-pink-800 font-medium" data-theme="pink"><i class="fas fa-heart mr-2"></i>Pink</button>
+      </div>
+      <div class="mt-6">
+        <h4 class="font-bold mb-2 text-[var(--text-color)]">Select Font Style</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <button class="font-option px-3 py-2 rounded border hover:bg-gray-100" data-font="Patrick Hand"><span style="font-family: 'Patrick Hand'">Patrick Hand</span></button>
+          <button class="font-option px-3 py-2 rounded border hover:bg-gray-100" data-font="Caveat"><span style="font-family: 'Caveat'">Caveat</span></button>
+          <button class="font-option px-3 py-2 rounded border hover:bg-gray-100" data-font="Indie Flower"><span style="font-family: 'Indie Flower'">Indie Flower</span></button>
+          <button class="font-option px-3 py-2 rounded border hover:bg-gray-100" data-font="Gochi Hand"><span style="font-family: 'Gochi Hand'">Gochi Hand</span></button>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button id="close-theme-modal" class="px-4 py-2 border-2 border-[var(--primary-color)] rounded-lg hover:bg-[var(--secondary-color)] text-[var(--text-color)] font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Selection Modal -->
+  <div id="task-modal" class="fixed inset-0 flex items-center justify-center hidden z-50 modal-overlay p-4">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full modal-content shadow-2xl border-2 border-[var(--primary-color)]">
+      <h3 class="font-bold text-xl mb-4 text-center text-[var(--text-color)]">Select Task</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Bengali 1st Paper">Bengali 1st</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Bengali 2nd Paper">Bengali 2nd</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="English 1st Paper">English 1st</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="English 2nd Paper">English 2nd</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Mathematics">Mathematics</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Higher Math">Higher Math</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Physics">Physics</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Chemistry">Chemistry</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="Biology">Biology</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-task="ICT">ICT</button>
+        <button class="task-btn border-2 border-[var(--primary-color)] px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)] col-span-full sm:col-span-1" id="custom-task-btn"><i class="fas fa-plus mr-1"></i>Custom Task</button>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button id="close-task-modal" class="px-4 py-2 border-2 border-[var(--primary-color)] rounded-lg hover:bg-[var(--secondary-color)] text-[var(--text-color)] font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time Selection Modal -->
+  <div id="time-modal" class="fixed inset-0 flex items-center justify-center hidden z-50 modal-overlay p-4">
+    <div class="bg-white p-6 rounded-xl max-w-sm w-full modal-content shadow-2xl border-2 border-[var(--primary-color)]">
+      <h3 class="font-bold text-xl mb-4 text-center text-[var(--text-color)]">Select Time</h3>
+      <div class="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="6:00-7:00">6-7 AM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="7:00-8:00">7-8 AM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="8:00-9:00">8-9 AM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="9:00-10:00">9-10 AM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="10:00-11:00">10-11 AM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="11:00-12:00">11-12 PM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="12:00-1:00">12-1 PM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="1:00-2:00">1-2 PM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="2:00-3:00">2-3 PM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="3:00-4:00">3-4 PM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="4:00-5:00">4-5 PM</button>
+        <button class="time-btn border-2 border-[var(--primary-color)] px-2 py-1 sm:px-3 sm:py-2 rounded-lg hover:bg-[var(--secondary-color)] bg-white text-[var(--text-color)]" data-time="5:00-6:00">5-6 PM</button>
+      </div>
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-[var(--text-color)] mb-1">Custom Time:</label>
+        <input type="text" id="custom-time-input" class="w-full border-2 border-[var(--primary-color)] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] task-input-field" placeholder="e.g., 9:30-11:00">
+      </div>
+      <div class="mt-4 flex justify-end space-x-2">
+        <button id="cancel-time" class="px-4 py-2 border-2 border-[var(--primary-color)] rounded-lg hover:bg-[var(--secondary-color)] text-[var(--text-color)] font-medium">Cancel</button>
+        <button id="save-time" class="px-4 py-2 bg-[var(--primary-color)] text-white rounded-lg hover:opacity-90 font-medium">Set Time</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Task Modal -->
+  <div id="custom-task-modal" class="fixed inset-0 flex items-center justify-center hidden z-50 modal-overlay p-4">
+    <div class="bg-white p-6 rounded-xl max-w-md w-full modal-content shadow-2xl border-2 border-[var(--primary-color)]">
+      <h3 class="font-bold text-xl mb-4 text-center text-[var(--text-color)]">Add Custom Task</h3>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-[var(--text-color)] mb-1">Task Name:</label>
+        <input type="text" id="custom-task-input" class="w-full border-2 border-[var(--primary-color)] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] task-input-field">
+      </div>
+      <div class="flex justify-end space-x-2">
+        <button id="cancel-custom-task" class="px-4 py-2 border-2 border-[var(--primary-color)] rounded-lg hover:bg-[var(--secondary-color)] text-[var(--text-color)] font-medium">Cancel</button>
+        <button id="save-custom-task" class="px-4 py-2 bg-[var(--primary-color)] text-white rounded-lg hover:opacity-90 font-medium">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Priority Selection Dropdown Template -->
+  <template id="priority-template">
+    <select class="w-full bg-transparent border-2 border-[var(--primary-color)] rounded-lg px-2 py-1 focus:ring-2 focus:ring-[var(--primary-color)] priority-select task-input-field text-sm">
+      <option value="High">High</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="Low">Low</option>
+    </select>
+  </template>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      let isEditMode = false;
+      const today = new Date();
+      let currentDate = new Date(today);
+      let activeRowIndex = null;
+      let activeCellType = null; // 'task', 'time', 'priority', 'comment'
+      
+      const editBtn = document.getElementById('edit-btn');
+      const saveBtn = document.getElementById('save-btn');
+      const addRowBtn = document.getElementById('add-row');
+      const printBtn = document.getElementById('print-btn');
+      const themeBtn = document.getElementById('theme-btn');
+      const taskTableBody = document.getElementById('task-table-body');
+      const currentDateElement = document.getElementById('current-date');
+      const pageNumberElement = document.getElementById('page-number');
+      const prevDayBtn = document.getElementById('prev-day');
+      const nextDayBtn = document.getElementById('next-day');
+      const notesContentWrapper = document.getElementById('notes-content-wrapper');
+      const taskModal = document.getElementById('task-modal');
+      const timeModal = document.getElementById('time-modal');
+      const themeModal = document.getElementById('theme-modal');
+      const customTaskModal = document.getElementById('custom-task-modal');
+      const closeTaskModalBtn = document.getElementById('close-task-modal');
+      const closeThemeModalBtn = document.getElementById('close-theme-modal');
+      const taskButtons = document.querySelectorAll('.task-btn');
+      const customTaskBtn = document.getElementById('custom-task-btn');
+      const customTaskInput = document.getElementById('custom-task-input');
+      const saveCustomTaskBtn = document.getElementById('save-custom-task');
+      const cancelCustomTaskBtn = document.getElementById('cancel-custom-task');
+      const timeButtons = document.querySelectorAll('.time-btn');
+      const customTimeInput = document.getElementById('custom-time-input');
+      const saveTimeBtn = document.getElementById('save-time');
+      const cancelTimeBtn = document.getElementById('cancel-time');
+      const themeOptions = document.querySelectorAll('.theme-option');
+      const fontOptions = document.querySelectorAll('.font-option');
+      const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+      const priorityTemplate = document.getElementById('priority-template');
+      const actionsHeader = document.getElementById('actions-header');
+      
+      updateDateDisplay();
+      loadPlannerData();
+      
+      editBtn.addEventListener('click', enableEditMode);
+      saveBtn.addEventListener('click', savePlannerData);
+      addRowBtn.addEventListener('click', addNewEmptyRow);
+      printBtn.addEventListener('click', printPlanner);
+      themeBtn.addEventListener('click', () => themeModal.classList.remove('hidden'));
+      prevDayBtn.addEventListener('click', goToPreviousDay);
+      nextDayBtn.addEventListener('click', goToNextDay);
+      closeTaskModalBtn.addEventListener('click', () => taskModal.classList.add('hidden'));
+      closeThemeModalBtn.addEventListener('click', () => themeModal.classList.add('hidden'));
+      customTaskBtn.addEventListener('click', showCustomTaskModal);
+      saveCustomTaskBtn.addEventListener('click', addCustomTask);
+      cancelCustomTaskBtn.addEventListener('click', () => customTaskModal.classList.add('hidden'));
+      saveTimeBtn.addEventListener('click', saveTimeSelection);
+      cancelTimeBtn.addEventListener('click', () => timeModal.classList.add('hidden'));
+      
+      themeOptions.forEach(option => option.addEventListener('click', function() { changeTheme(this.dataset.theme); }));
+      fontOptions.forEach(option => option.addEventListener('click', function() { changeFont(this.dataset.font); }));
+      
+      taskButtons.forEach(button => {
+        if (button.id !== 'custom-task-btn') {
+          button.addEventListener('click', function() {
+            updateCellWithInput(activeRowIndex, 2, this.dataset.task); // Column index 2 for Task
+            taskModal.classList.add('hidden');
+          });
+        }
+      });
+      
+      timeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          updateCellWithInput(activeRowIndex, 3, this.dataset.time); // Column index 3 for Time
+          timeModal.classList.add('hidden');
+        });
+      });
+
+      dayCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            // No restriction, can be changed anytime. Saved on global save.
+        });
+      });
+
+      function updateCellWithInput(rowIndex, cellIndex, value) {
+        if (rowIndex === null) return;
+        const rows = taskTableBody.querySelectorAll('tr');
+        if (rowIndex < rows.length) {
+            const cell = rows[rowIndex].cells[cellIndex];
+            if (cell) {
+                cell.innerHTML = `<input type="text" class="w-full bg-transparent task-input-field px-1 py-0.5" value="${value}">`;
+                const input = cell.querySelector('input');
+                if (input) input.focus();
+            }
+        }
+      }
+
+      function enableEditMode() {
+        isEditMode = true;
+        editBtn.classList.add('hidden');
+        saveBtn.classList.remove('hidden');
+        addRowBtn.classList.remove('hidden');
+        actionsHeader.classList.remove('hidden');
+
+        const taskRows = taskTableBody.querySelectorAll('tr');
+        taskRows.forEach((row, rowIndex) => {
+          // Task Number
+          const numberCell = row.cells[0];
+          numberCell.innerHTML = `<span class="task-number-edit" data-row="${rowIndex}">${rowIndex + 1}</span>`;
+          
+          // Status Checkbox
+          const statusCheckbox = row.cells[1].querySelector('.task-complete-checkbox');
+          if (statusCheckbox) statusCheckbox.disabled = false;
+
+          // Clickable cells for editing (Task, Time, Priority, Comment)
+          // Indices: Task=2, Time=3, Priority=4, Comment=5
+          [2, 3, 4, 5].forEach(cellIndex => {
+            const cell = row.cells[cellIndex];
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', cellEditHandler);
+          });
+
+          // Add Delete Button
+          const actionsCell = row.cells[6];
+          actionsCell.innerHTML = `<button class="delete-row-btn text-red-500 hover:text-red-700 text-lg"><i class="fas fa-trash-alt"></i></button>`;
+          actionsCell.querySelector('.delete-row-btn').addEventListener('click', function() {
+            row.remove();
+            renumberTasks();
+          });
+        });
+        
+        // Make notes editable
+        const currentNotesText = Array.from(notesContentWrapper.querySelectorAll('.notes-line'))
+                                    .map(span => span.textContent)
+                                    .join('\n');
+        notesContentWrapper.innerHTML = ''; // Clear old spans
+        const notesTextarea = document.createElement('textarea');
+        notesTextarea.className = 'w-full min-h-[112px] bg-transparent focus:outline-none resize-none absolute inset-0 p-2'; // Use absolute to overlay on parent with lines
+        notesTextarea.style.lineHeight = '28px'; 
+        notesTextarea.value = currentNotesText;
+        notesContentWrapper.appendChild(notesTextarea);
+        notesTextarea.focus();
+      }
+
+      function cellEditHandler() { // 'this' refers to the clicked TD
+        if (!isEditMode) return;
+        
+        const cell = this;
+        const rowIndex = Array.from(cell.parentNode.parentNode.children).indexOf(cell.parentNode);
+        const cellIndex = Array.from(cell.parentNode.children).indexOf(cell);
+        activeRowIndex = rowIndex;
+
+        // Prevent re-initializing if already an input/select
+        if (cell.querySelector('input, select, textarea')) return;
+
+        const currentText = cell.textContent.trim();
+
+        if (cellIndex === 2) { // Task
+          activeCellType = 'task';
+          taskModal.classList.remove('hidden');
+          // Task value will be set by modal or custom input
+          cell.innerHTML = `<input type="text" class="w-full bg-transparent task-input-field px-1 py-0.5" value="${currentText}">`;
+          cell.querySelector('input').focus();
+        } else if (cellIndex === 3) { // Time
+          activeCellType = 'time';
+          timeModal.classList.remove('hidden');
+          // Time value will be set by modal or custom input
+          cell.innerHTML = `<input type="text" class="w-full bg-transparent task-input-field px-1 py-0.5" value="${currentText}">`;
+          cell.querySelector('input').focus();
+        } else if (cellIndex === 4) { // Priority
+          activeCellType = 'priority';
+          const prioritySelect = priorityTemplate.content.cloneNode(true);
+          const selectElement = prioritySelect.querySelector('select');
+          selectElement.value = currentText || 'Medium';
+          cell.innerHTML = '';
+          cell.appendChild(prioritySelect);
+          selectElement.focus();
+        } else if (cellIndex === 5) { // Comment
+          activeCellType = 'comment';
+          cell.innerHTML = `<textarea class="w-full h-full bg-transparent task-input-field px-1 py-0.5 min-h-[40px] resize-none">${currentText}</textarea>`;
+          cell.querySelector('textarea').focus();
+        }
+      }
+      
+      function savePlannerData() {
+        isEditMode = false;
+        editBtn.classList.remove('hidden');
+        saveBtn.classList.add('hidden');
+        addRowBtn.classList.add('hidden');
+        actionsHeader.classList.add('hidden');
+        
+        const tasksToSave = [];
+        const taskRows = taskTableBody.querySelectorAll('tr');
+        
+        taskRows.forEach((row, rowIndex) => {
+          const cells = row.cells;
+          
+          // Task Number (display only)
+          cells[0].innerHTML = `<span class="task-number-display">${rowIndex + 1}</span>`;
+          
+          // Status Checkbox
+          const statusCheckbox = cells[1].querySelector('.task-complete-checkbox');
+          const completed = statusCheckbox ? statusCheckbox.checked : false;
+          if (statusCheckbox) statusCheckbox.disabled = true;
+          row.classList.toggle('task-completed', completed);
+
+          // Task, Time, Priority, Comment
+          const taskValue = cells[2].querySelector('input, textarea')?.value ?? cells[2].textContent.trim();
+          const timeValue = cells[3].querySelector('input, textarea')?.value ?? cells[3].textContent.trim();
+          
+          let priorityValue = cells[4].querySelector('select')?.value ?? cells[4].textContent.trim();
+          if (!['High', 'Medium', 'Low'].includes(priorityValue)) priorityValue = 'Medium'; // Default if invalid
+
+          const commentValue = cells[5].querySelector('input, textarea')?.value ?? cells[5].textContent.trim();
+
+          cells[2].textContent = taskValue;
+          cells[3].textContent = timeValue;
+          cells[4].textContent = priorityValue;
+          cells[5].textContent = commentValue;
+
+          // Update priority class
+          cells[4].className = 'border-2 border-black align-top p-2 priority-content'; // Reset classes
+          cells[4].classList.add(`priority-${priorityValue.toLowerCase()}`);
+          
+          // Remove click listeners and cursor style
+          [2,3,4,5].forEach(idx => {
+              cells[idx].style.cursor = 'default';
+              cells[idx].removeEventListener('click', cellEditHandler);
+          });
+
+          // Clear Actions cell
+          cells[6].innerHTML = '';
+
+          tasksToSave.push({
+            number: rowIndex + 1,
+            completed: completed,
+            task: taskValue,
+            time: timeValue,
+            priority: priorityValue,
+            comment: commentValue
+          });
+        });
+        
+        // Save notes
+        const notesTextarea = notesContentWrapper.querySelector('textarea');
+        let notesText = '';
+        if (notesTextarea) {
+          notesText = notesTextarea.value;
+          notesContentWrapper.innerHTML = ''; // Clear textarea
+          if (notesText.trim() === '') {
+            for (let i = 0; i < 4; i++) { addNotesLineElement(''); }
+          } else {
+            notesText.split('\n').forEach(line => addNotesLineElement(line));
+          }
+        }
+        
+        const dayCheckboxValues = {};
+        dayCheckboxes.forEach(checkbox => {
+          dayCheckboxValues[checkbox.dataset.day] = checkbox.checked;
+        });
+        
+        const currentTheme = Array.from(document.body.classList).find(c => c.startsWith('theme-'))?.replace('theme-', '') || 'purple';
+        const currentFontFamily = document.body.style.fontFamily || "'Patrick Hand', cursive";
+        
+        localStorage.setItem(formatDate(currentDate), JSON.stringify({
+          tasks: tasksToSave,
+          notes: notesText,
+          dayCheckboxValues,
+          theme: currentTheme,
+          font: currentFontFamily.split(',')[0].replace(/'/g, "").trim() // Store only primary font name
+        }));
+      }
+
+      function addNotesLineElement(text) {
+        const noteLine = document.createElement('span');
+        noteLine.className = 'notes-line';
+        noteLine.textContent = text;
+        notesContentWrapper.appendChild(noteLine);
+      }
+      
+      function loadPlannerData() {
+        const dateKey = formatDate(currentDate);
+        const savedData = localStorage.getItem(dateKey);
+        
+        taskTableBody.innerHTML = ''; // Clear existing tasks
+        notesContentWrapper.innerHTML = ''; // Clear existing notes
+        
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          
+          if (data.theme) changeTheme(data.theme);
+          if (data.font) changeFont(data.font);
+          
+          if (data.tasks && data.tasks.length > 0) {
+            data.tasks.forEach(taskData => {
+              addTaskRowToTable(taskData);
+            });
+          } else {
+            addEmptyTaskRows(3); // Add 3 empty rows if no tasks saved
+          }
+          
+          if (data.notes && data.notes.trim() !== '') {
+            data.notes.split('\n').forEach(line => addNotesLineElement(line));
+          } else {
+            for (let i = 0; i < 4; i++) { addNotesLineElement(''); }
+          }
+          
+          if (data.dayCheckboxValues) {
+            dayCheckboxes.forEach(checkbox => {
+              checkbox.checked = data.dayCheckboxValues[checkbox.dataset.day] || false;
+            });
+          } else {
+            // Set current day checkbox if no saved data for checkboxes
+             const todayDay = currentDate.getDay();
+             dayCheckboxes.forEach(cb => cb.checked = (cb.dataset.day == todayDay));
+          }
+
+        } else {
+          addEmptyTaskRows(3); // Add 3 empty rows if no data at all for this date
+          for (let i = 0; i < 4; i++) { addNotesLineElement(''); }
+          const todayDay = currentDate.getDay();
+          dayCheckboxes.forEach(cb => cb.checked = (cb.dataset.day == todayDay));
+          // Apply default theme/font if not already set
+          if (!document.body.style.fontFamily) changeFont('Patrick Hand');
+          if (!Array.from(document.body.classList).some(c => c.startsWith('theme-'))) changeTheme('purple');
+        }
+        // Ensure edit mode specific UI is reset if planner was left in edit mode
+        if (isEditMode) { // Should not happen on initial load, but good practice
+            isEditMode = false;
+            editBtn.classList.remove('hidden');
+            saveBtn.classList.add('hidden');
+            addRowBtn.classList.add('hidden');
+            actionsHeader.classList.add('hidden');
+        }
+      }
+      
+      function addEmptyTaskRows(count) {
+        for (let i = 0; i < count; i++) {
+          addTaskRowToTable({
+            number: taskTableBody.children.length + 1,
+            completed: false,
+            task: '',
+            time: '',
+            priority: 'Medium',
+            comment: ''
+          });
+        }
+      }
+      
+      function addTaskRowToTable(taskData) {
+        const row = document.createElement('tr');
+        row.className = 'task-row';
+        if (taskData.completed) row.classList.add('task-completed');
+
+        const priorityClass = `priority-${(taskData.priority || 'Medium').toLowerCase()}`;
+        
+        row.innerHTML = `
+          <td class="border-2 border-black align-top text-center p-2">
+            <span class="task-number-display">${taskData.number}</span>
+          </td>
+          <td class="border-2 border-black align-middle text-center p-2">
+            <input type="checkbox" class="task-complete-checkbox accent-[var(--primary-color)] w-5 h-5" ${taskData.completed ? 'checked' : ''} disabled>
+          </td>
+          <td class="border-2 border-black align-top p-2 task-content">${taskData.task}</td>
+          <td class="border-2 border-black align-top p-2 time-content">${taskData.time}</td>
+          <td class="border-2 border-black align-top p-2 priority-content ${priorityClass}">${taskData.priority}</td>
+          <td class="border-2 border-black align-top p-2 comment-content">${taskData.comment}</td>
+          <td class="border-2 border-black align-middle text-center p-2 no-print actions-cell"></td>
+        `;
+        taskTableBody.appendChild(row);
+        
+        // Add change listener to checkbox for live update of 'task-completed' class (even outside edit mode for visual feedback)
+        const checkbox = row.querySelector('.task-complete-checkbox');
+        checkbox.addEventListener('change', function() {
+            row.classList.toggle('task-completed', this.checked);
+        });
+      }
+      
+      function addNewEmptyRow() {
+        if (!isEditMode) return;
+        const newRowNumber = taskTableBody.querySelectorAll('tr').length + 1;
+        const taskData = {
+            number: newRowNumber,
+            completed: false,
+            task: '',
+            time: '',
+            priority: 'Medium',
+            comment: ''
+        };
+        addTaskRowToTable(taskData);
+        
+        // Immediately make the new row editable
+        const newTr = taskTableBody.lastElementChild;
+        if (newTr) {
+            const numberCell = newTr.cells[0];
+            numberCell.innerHTML = `<span class="task-number-edit" data-row="${newRowNumber - 1}">${newRowNumber}</span>`;
+            
+            const statusCheckbox = newTr.cells[1].querySelector('.task-complete-checkbox');
+            if (statusCheckbox) statusCheckbox.disabled = false;
+
+            [2, 3, 4, 5].forEach(cellIndex => {
+                const cell = newTr.cells[cellIndex];
+                cell.style.cursor = 'pointer';
+                cell.addEventListener('click', cellEditHandler);
+            });
+
+            const actionsCell = newTr.cells[6];
+            actionsCell.innerHTML = `<button class="delete-row-btn text-red-500 hover:text-red-700 text-lg"><i class="fas fa-trash-alt"></i></button>`;
+            actionsCell.querySelector('.delete-row-btn').addEventListener('click', function() {
+                newTr.remove();
+                renumberTasks();
+            });
+        }
+      }
+
+      function renumberTasks() {
+        const taskRows = taskTableBody.querySelectorAll('tr');
+        taskRows.forEach((row, rowIndex) => {
+          const numberDisplay = row.cells[0].querySelector('.task-number-display');
+          const numberEdit = row.cells[0].querySelector('.task-number-edit');
+          if (isEditMode && numberEdit) {
+            numberEdit.textContent = rowIndex + 1;
+            numberEdit.dataset.row = rowIndex;
+          } else if (numberDisplay) {
+            numberDisplay.textContent = rowIndex + 1;
+          }
+          // Update activeRowIndex if it's affected (though less critical after deletion)
+          if (activeRowIndex > rowIndex) activeRowIndex--; 
+        });
+      }
+      
+      function showCustomTaskModal() {
+        customTaskInput.value = '';
+        taskModal.classList.add('hidden');
+        customTaskModal.classList.remove('hidden');
+      }
+      
+      function addCustomTask() {
+        const taskName = customTaskInput.value.trim();
+        if (taskName && activeRowIndex !== null) {
+            updateCellWithInput(activeRowIndex, 2, taskName); // Task cell is index 2
+            customTaskModal.classList.add('hidden');
+        } else if (taskName) { // If no active row, maybe add to last editable input if any? Or user must click cell first.
+            // For now, requires an active cell.
+            alert("Please click on a task cell first to add a custom task.");
+        }
+      }
+      
+      function saveTimeSelection() {
+        const time = customTimeInput.value.trim();
+        if (time && activeRowIndex !== null) {
+            updateCellWithInput(activeRowIndex, 3, time); // Time cell is index 3
+            timeModal.classList.add('hidden');
+            customTimeInput.value = '';
+        } else if (time) {
+            alert("Please click on a time cell first to set custom time.");
+        }
+      }
+
+      function changeTheme(theme) {
+        document.body.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-pink');
+        document.body.classList.add(`theme-${theme}`);
+        const themes = {
+          blue: { primary: '#3b82f6', secondary: '#bfdbfe', text: '#1e3a8a' },
+          green: { primary: '#10b981', secondary: '#d1fae5', text: '#064e3b' },
+          purple: { primary: '#8b5cf6', secondary: '#ddd6fe', text: '#5b21b6' },
+          pink: { primary: '#ec4899', secondary: '#fbcfe8', text: '#831843' }
+        };
+        document.body.style.setProperty('--primary-color', themes[theme].primary);
+        document.body.style.setProperty('--secondary-color', themes[theme].secondary);
+        document.body.style.setProperty('--text-color', themes[theme].text);
+        themeModal.classList.add('hidden');
+      }
+      
+      function changeFont(font) {
+        document.body.style.fontFamily = `'${font}', cursive`;
+        // Also update handwritten class for consistency, though body style should cascade
+        document.querySelectorAll('.handwritten').forEach(el => el.style.fontFamily = `'${font}', cursive`);
+        themeModal.classList.add('hidden');
+      }
+      
+      function printPlanner() { window.print(); }
+      
+      function goToPreviousDay() {
+        currentDate.setDate(currentDate.getDate() - 1);
+        updateDateDisplay();
+        loadPlannerData();
+      }
+      
+      function goToNextDay() {
+        currentDate.setDate(currentDate.getDate() + 1);
+        updateDateDisplay();
+        loadPlannerData();
+      }
+      
+      function updateDateDisplay() {
+        const formatted = formatDate(currentDate);
+        currentDateElement.textContent = `Date: ${formatted}`;
+        const start = new Date(currentDate.getFullYear(), 0, 0);
+        const diff = currentDate - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
+        pageNumberElement.textContent = `${dayOfYear}`;
+      }
+      
+      function formatDate(date) {
+        const d = String(date.getDate()).padStart(2, '0');
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}/${m}/${y}`;
+      }
+    });
+  </script>
+</body>
+</html>
